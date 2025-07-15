@@ -1,0 +1,33 @@
+{
+  "name": "cricket-connect",
+  "version": "1.0.0",
+  "description": "Cricket Connect - The Ultimate Cricket Chain Game",
+  "main": "index.html",
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "dev": "python3 -m http.server 8000",
+    "build": "echo 'No build process needed for static site'",
+    "deploy": "netlify deploy --prod"
+  },
+  "keywords": [
+    "cricket",
+    "game",
+    "multiplayer",
+    "web-game",
+    "graph-algorithms",
+    "codeforces-style"
+  ],
+  "author": "Praneeth",
+  "license": "MIT",
+  "homepage": "https://cricweb.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Praneeth-iith/CricWeb"
+  },
+  "bugs": {
+    "url": "https://github.com/Praneeth-iith/CricWeb/issues"
+  },
+  "devDependencies": {
+    "netlify-cli": "^17.0.0"
+  }
+}
