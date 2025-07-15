@@ -18,6 +18,8 @@ class GameRoom {
         this.roundTimer = null;
         this.roundStartTime = null;
         this.playerSubmissions = new Map();
+        this.createdAt = Date.now();
+        this.lastActivity = Date.now();
         
         // Set game mode
         setGameMode(this.mode);
@@ -31,6 +33,40 @@ class GameRoom {
         }
         console.log('Generated room code:', code);
         return code;
+    }
+
+    // Convert room to plain object for storage
+    toJSON() {
+        return {
+            id: this.id,
+            name: this.name,
+            mode: this.mode,
+            maxPlayers: this.maxPlayers,
+            totalRounds: this.totalRounds,
+            timePerRound: this.timePerRound,
+            wrongAnswerPenalty: this.wrongAnswerPenalty,
+            players: Array.from(this.players.entries()),
+            hostId: this.hostId,
+            currentRound: this.currentRound,
+            gameState: this.gameState,
+            roundHistory: this.roundHistory,
+            createdAt: this.createdAt,
+            lastActivity: this.lastActivity
+        };
+    }
+
+    // Create room from stored data
+    static fromJSON(data) {
+        const room = new GameRoom(data);
+        room.id = data.id;
+        room.players = new Map(data.players);
+        room.hostId = data.hostId;
+        room.currentRound = data.currentRound;
+        room.gameState = data.gameState;
+        room.roundHistory = data.roundHistory;
+        room.createdAt = data.createdAt;
+        room.lastActivity = data.lastActivity;
+        return room;
     }
 
     addPlayer(playerName, isHost = false) {
@@ -51,6 +87,7 @@ class GameRoom {
         };
 
         this.players.set(playerId, player);
+        this.lastActivity = Date.now();
         
         if (isHost) {
             this.hostId = playerId;
@@ -68,6 +105,7 @@ class GameRoom {
         if (!player) return false;
 
         this.players.delete(playerId);
+        this.lastActivity = Date.now();
         
         // If host leaves, assign new host
         if (playerId === this.hostId && this.players.size > 0) {
@@ -90,6 +128,7 @@ class GameRoom {
 
         this.gameState = 'playing';
         this.currentRound = 1;
+        this.lastActivity = Date.now();
         this.startRound();
         
         return { success: true };
@@ -98,303 +137,361 @@ class GameRoom {
     startRound() {
         this.playerSubmissions.clear();
         this.roundStartTime = Date.now();
+        this.lastActivity = Date.now();
         
         // Generate challenge
         this.currentChallenge = this.generateChallenge();
         
-        // Start timer
+        // Set timer
         this.roundTimer = setTimeout(() => {
             this.endRound();
         }, this.timePerRound * 1000);
-
-        return this.currentChallenge;
     }
 
     generateChallenge() {
-        const playerPair = currentGraph.getRandomPlayerPair();
-        const shortestPath = currentGraph.findShortestPath(playerPair.player1, playerPair.player2);
+        const players = getCurrentPlayers();
+        const randomPlayers = this.getRandomPlayers(players, 2);
         
         return {
-            playerA: playerPair.player1,
-            playerB: playerPair.player2,
-            shortestPath: shortestPath,
-            round: this.currentRound
+            from: randomPlayers[0],
+            to: randomPlayers[1],
+            roundNumber: this.currentRound
         };
+    }
+
+    getRandomPlayers(players, count) {
+        const shuffled = [...players].sort(() => 0.5 - Math.random());
+        return shuffled.slice(0, count);
     }
 
     submitAnswer(playerId, answer) {
+        if (this.gameState !== 'playing') {
+            return { success: false, message: 'Game not in progress' };
+        }
+
         const player = this.players.get(playerId);
-        if (!player || this.gameState !== 'playing') {
-            return { success: false, message: 'Invalid submission' };
+        if (!player) {
+            return { success: false, message: 'Player not found' };
+        }
+
+        // Check if player already submitted
+        if (this.playerSubmissions.has(playerId)) {
+            return { success: false, message: 'Already submitted' };
         }
 
         const submissionTime = Date.now();
-        const timeTaken = (submissionTime - this.roundStartTime) / 1000;
+        const timeTaken = Math.ceil((submissionTime - this.roundStartTime) / 1000 / 60); // minutes, rounded up
 
         // Validate answer
-        const result = this.validateAnswer(answer, timeTaken);
+        const isCorrect = this.validateAnswer(answer);
         
-        this.playerSubmissions.set(playerId, {
+        const submission = {
+            playerId: playerId,
             answer: answer,
             timeTaken: timeTaken,
-            submissionTime: submissionTime,
-            result: result
-        });
+            isCorrect: isCorrect,
+            submittedAt: submissionTime
+        };
 
-        return { success: true, result: result };
-    }
+        this.playerSubmissions.set(playerId, submission);
+        this.lastActivity = Date.now();
 
-    validateAnswer(answer, timeTaken) {
-        const { playerA, playerB } = this.currentChallenge;
-        
-        if (answer.type === 'impossible') {
-            // Check if connection is actually impossible
-            const shortestPath = currentGraph.findShortestPath(playerA, playerB);
-            if (!shortestPath) {
-                return {
-                    type: 'impossible',
-                    correct: true,
-                    timeTaken: timeTaken,
-                    penalty: Math.ceil(timeTaken / 60) // Convert to minutes, round up
-                };
-            } else {
-                return {
-                    type: 'impossible',
-                    correct: false,
-                    timeTaken: timeTaken,
-                    penalty: this.wrongAnswerPenalty * 60 // Convert to seconds for penalty
-                };
-            }
-        } else if (answer.type === 'path') {
-            const path = answer.path;
-            
-            // Validate path structure
-            if (!Array.isArray(path) || path.length < 2) {
-                return {
-                    type: 'path',
-                    correct: false,
-                    timeTaken: timeTaken,
-                    path: path,
-                    penalty: this.wrongAnswerPenalty * 60
-                };
-            }
-
-            // Check if path starts and ends correctly
-            if (path[0] !== playerA || path[path.length - 1] !== playerB) {
-                return {
-                    type: 'path',
-                    correct: false,
-                    timeTaken: timeTaken,
-                    path: path,
-                    penalty: this.wrongAnswerPenalty * 60
-                };
-            }
-
-            // Validate path connections
-            const isValidPath = currentGraph.validatePath(path);
-            if (!isValidPath) {
-                return {
-                    type: 'path',
-                    correct: false,
-                    timeTaken: timeTaken,
-                    path: path,
-                    penalty: this.wrongAnswerPenalty * 60
-                };
-            }
-
-            // Valid path - calculate time penalty in minutes
-            return {
-                type: 'path',
-                correct: true,
-                timeTaken: timeTaken,
-                path: path,
-                pathLength: path.length - 1,
-                penalty: Math.ceil(timeTaken / 60) // Convert to minutes, round up
-            };
+        // Update player stats
+        if (isCorrect) {
+            player.correctAnswers++;
+            player.totalPenalty += timeTaken;
+        } else {
+            player.wrongSubmissions++;
+            player.totalPenalty += this.wrongAnswerPenalty;
         }
 
-        return {
-            type: 'invalid',
-            correct: false,
+        // Add to round data
+        player.roundData.push({
+            round: this.currentRound,
             timeTaken: timeTaken,
-            penalty: this.wrongAnswerPenalty * 60
-        };
+            isCorrect: isCorrect,
+            penalty: isCorrect ? timeTaken : this.wrongAnswerPenalty
+        });
+
+        return { success: true, isCorrect: isCorrect };
+    }
+
+    validateAnswer(answer) {
+        if (!this.currentChallenge) return false;
+        
+        const path = findShortestPath(this.currentChallenge.from, this.currentChallenge.to);
+        
+        if (!path || path.length === 0) {
+            // No path exists, any answer gets points
+            return true;
+        }
+
+        // Validate the submitted path
+        if (!answer || answer.length < 2) return false;
+        
+        // Check if path is valid
+        return this.isValidPath(answer);
+    }
+
+    isValidPath(path) {
+        if (path.length < 2) return false;
+        
+        for (let i = 0; i < path.length - 1; i++) {
+            const current = path[i];
+            const next = path[i + 1];
+            
+            // Check if players are connected
+            if (!arePlayersConnected(current, next)) {
+                return false;
+            }
+        }
+        
+        return true;
     }
 
     endRound() {
+        this.gameState = 'roundResults';
+        this.lastActivity = Date.now();
+        
         if (this.roundTimer) {
             clearTimeout(this.roundTimer);
             this.roundTimer = null;
         }
 
-        this.gameState = 'roundResults';
-        
-        // Calculate final scores for the round
-        this.calculateRoundScores();
-        
         // Store round results
         const roundResult = {
-            round: this.currentRound,
+            roundNumber: this.currentRound,
             challenge: this.currentChallenge,
-            submissions: Object.fromEntries(this.playerSubmissions),
-            leaderboard: this.getLeaderboard()
+            submissions: Array.from(this.playerSubmissions.entries()),
+            endedAt: Date.now()
         };
-        
+
         this.roundHistory.push(roundResult);
-        
+
+        // Check if game is over
+        if (this.currentRound >= this.totalRounds) {
+            this.gameState = 'gameOver';
+        }
+
         return roundResult;
     }
 
-    calculateRoundScores() {
-        for (const [playerId, submission] of this.playerSubmissions) {
-            const player = this.players.get(playerId);
-            if (player) {
-                // Update based on Codeforces-style scoring
-                if (submission.result.correct) {
-                    player.correctAnswers += 1;
-                } else {
-                    player.wrongSubmissions += 1;
-                }
-                
-                // Add penalty (time for correct, penalty time for wrong)
-                player.totalPenalty += submission.result.penalty;
-                
-                // Store round data
-                player.roundData.push({
-                    round: this.currentRound,
-                    correct: submission.result.correct,
-                    penalty: submission.result.penalty,
-                    timeTaken: submission.timeTaken,
-                    type: submission.result.type
-                });
-            }
-        }
-    }
-
     nextRound() {
+        if (this.gameState !== 'roundResults') {
+            return { success: false, message: 'Not in round results state' };
+        }
+
         if (this.currentRound >= this.totalRounds) {
             this.gameState = 'gameOver';
-            return { gameOver: true };
+            return { success: false, message: 'Game over' };
         }
 
         this.currentRound++;
         this.gameState = 'playing';
+        this.lastActivity = Date.now();
         this.startRound();
-        
-        return { success: true, round: this.currentRound };
-    }
-
-    getLeaderboard() {
-        const playerArray = Array.from(this.players.values());
-        return playerArray
-            .sort((a, b) => {
-                // Codeforces-style ranking: 
-                // 1. Number of correct answers (descending)
-                // 2. Total penalty (ascending)
-                if (a.correctAnswers !== b.correctAnswers) {
-                    return b.correctAnswers - a.correctAnswers;
-                }
-                
-                return a.totalPenalty - b.totalPenalty;
-            })
-            .map((player, index) => ({
-                rank: index + 1,
-                playerId: player.id,
-                name: player.name,
-                correctAnswers: player.correctAnswers,
-                totalPenalty: player.totalPenalty,
-                wrongSubmissions: player.wrongSubmissions,
-                totalTime: player.roundData.reduce((sum, round) => sum + round.timeTaken, 0)
-            }));
-    }
-
-    deleteRound(roundNumber) {
-        if (roundNumber < 1 || roundNumber > this.roundHistory.length) {
-            return { success: false, message: 'Invalid round number' };
-        }
-
-        // Remove round from history
-        this.roundHistory.splice(roundNumber - 1, 1);
-        
-        // Recalculate scores
-        this.recalculateAllScores();
-        
-        // Adjust current round if necessary
-        if (this.currentRound > this.roundHistory.length) {
-            this.currentRound = this.roundHistory.length;
-        }
 
         return { success: true };
     }
 
-    recalculateAllScores() {
-        // Reset all player scores
-        for (const player of this.players.values()) {
+    getRankings() {
+        const players = Array.from(this.players.values());
+        
+        // Sort by problems solved (descending), then by penalty time (ascending)
+        return players.sort((a, b) => {
+            if (b.correctAnswers !== a.correctAnswers) {
+                return b.correctAnswers - a.correctAnswers;
+            }
+            return a.totalPenalty - b.totalPenalty;
+        });
+    }
+
+    deleteRound(roundNumber) {
+        const roundIndex = this.roundHistory.findIndex(r => r.roundNumber === roundNumber);
+        if (roundIndex === -1) return false;
+
+        const round = this.roundHistory[roundIndex];
+        this.roundHistory.splice(roundIndex, 1);
+        this.lastActivity = Date.now();
+
+        // Recalculate player stats
+        this.recalculatePlayerStats();
+
+        return true;
+    }
+
+    recalculatePlayerStats() {
+        // Reset all player stats
+        this.players.forEach(player => {
             player.correctAnswers = 0;
             player.totalPenalty = 0;
             player.wrongSubmissions = 0;
             player.roundData = [];
-        }
+        });
 
-        // Recalculate from round history
-        for (let i = 0; i < this.roundHistory.length; i++) {
-            const round = this.roundHistory[i];
-            round.round = i + 1; // Update round number
-            
-            for (const [playerId, submission] of Object.entries(round.submissions)) {
+        // Recalculate from remaining rounds
+        this.roundHistory.forEach(round => {
+            round.submissions.forEach(([playerId, submission]) => {
                 const player = this.players.get(playerId);
                 if (player) {
-                    // Update based on Codeforces-style scoring
-                    if (submission.result.correct) {
-                        player.correctAnswers += 1;
+                    if (submission.isCorrect) {
+                        player.correctAnswers++;
+                        player.totalPenalty += submission.timeTaken;
                     } else {
-                        player.wrongSubmissions += 1;
+                        player.wrongSubmissions++;
+                        player.totalPenalty += this.wrongAnswerPenalty;
                     }
-                    
-                    // Add penalty
-                    player.totalPenalty += submission.result.penalty;
-                    
-                    // Store round data
+
                     player.roundData.push({
-                        round: i + 1,
-                        correct: submission.result.correct,
-                        penalty: submission.result.penalty,
+                        round: round.roundNumber,
                         timeTaken: submission.timeTaken,
-                        type: submission.result.type
+                        isCorrect: submission.isCorrect,
+                        penalty: submission.isCorrect ? submission.timeTaken : this.wrongAnswerPenalty
                     });
                 }
-            }
-        }
+            });
+        });
     }
 
-    getGameSummary() {
-        const totalRounds = this.roundHistory.length;
-        const averageTime = this.roundHistory.reduce((sum, round) => {
-            const roundTimes = Object.values(round.submissions).map(s => s.timeTaken);
-            const avgRoundTime = roundTimes.reduce((a, b) => a + b, 0) / roundTimes.length;
-            return sum + avgRoundTime;
-        }, 0) / totalRounds;
-
-        const totalCorrect = Array.from(this.players.values()).reduce((sum, player) => sum + player.correctAnswers, 0);
-        const totalWrong = Array.from(this.players.values()).reduce((sum, player) => sum + player.wrongSubmissions, 0);
-
-        return {
-            totalRounds: totalRounds,
-            averageTime: averageTime,
-            mode: this.mode,
-            totalPlayers: this.players.size,
-            totalCorrect: totalCorrect,
-            totalWrong: totalWrong,
-            gameTime: Date.now() - this.roundHistory[0]?.challenge?.round || 0
-        };
+    // Check if room is expired (older than 2 hours)
+    isExpired() {
+        const now = Date.now();
+        const twoHours = 2 * 60 * 60 * 1000;
+        return (now - this.lastActivity) > twoHours;
     }
 }
 
-// Game Manager
+// Persistent Storage Manager
+class StorageManager {
+    constructor() {
+        this.STORAGE_KEY = 'cricketConnect_rooms';
+        this.CLEANUP_INTERVAL = 5 * 60 * 1000; // 5 minutes
+        this.channel = new BroadcastChannel('cricketConnect');
+        
+        // Listen for messages from other tabs
+        this.channel.onmessage = (event) => {
+            if (event.data.type === 'roomUpdate') {
+                this.syncRooms();
+            }
+        };
+        
+        // Cleanup expired rooms periodically
+        setInterval(() => {
+            this.cleanupExpiredRooms();
+        }, this.CLEANUP_INTERVAL);
+    }
+
+    // Save room to localStorage
+    saveRoom(room) {
+        const rooms = this.loadRooms();
+        rooms[room.id] = room.toJSON();
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(rooms));
+        
+        // Notify other tabs
+        this.channel.postMessage({ type: 'roomUpdate', roomId: room.id });
+    }
+
+    // Load room from localStorage
+    loadRoom(roomId) {
+        const rooms = this.loadRooms();
+        const roomData = rooms[roomId];
+        
+        if (!roomData) return null;
+        
+        return GameRoom.fromJSON(roomData);
+    }
+
+    // Load all rooms from localStorage
+    loadRooms() {
+        try {
+            const stored = localStorage.getItem(this.STORAGE_KEY);
+            return stored ? JSON.parse(stored) : {};
+        } catch (error) {
+            console.error('Error loading rooms:', error);
+            return {};
+        }
+    }
+
+    // Delete room from localStorage
+    deleteRoom(roomId) {
+        const rooms = this.loadRooms();
+        delete rooms[roomId];
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(rooms));
+        
+        // Notify other tabs
+        this.channel.postMessage({ type: 'roomUpdate', roomId: roomId });
+    }
+
+    // Get all room IDs
+    getAllRoomIds() {
+        const rooms = this.loadRooms();
+        return Object.keys(rooms);
+    }
+
+    // Cleanup expired rooms
+    cleanupExpiredRooms() {
+        const rooms = this.loadRooms();
+        const now = Date.now();
+        const twoHours = 2 * 60 * 60 * 1000;
+        let hasChanges = false;
+
+        for (const [roomId, roomData] of Object.entries(rooms)) {
+            if ((now - roomData.lastActivity) > twoHours) {
+                delete rooms[roomId];
+                hasChanges = true;
+                console.log('Cleaned up expired room:', roomId);
+            }
+        }
+
+        if (hasChanges) {
+            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(rooms));
+            this.channel.postMessage({ type: 'roomUpdate' });
+        }
+    }
+
+    // Sync rooms from storage (called when receiving broadcast message)
+    syncRooms() {
+        if (window.gameManager) {
+            window.gameManager.syncFromStorage();
+        }
+    }
+}
+
+// Game Manager with persistent storage
 class GameManager {
     constructor() {
         this.rooms = new Map();
         this.playerRooms = new Map(); // Track which room each player is in
+        this.storage = new StorageManager();
+        
+        // Load existing rooms from storage
+        this.loadFromStorage();
+        
+        // Make accessible globally for debugging
+        window.gameManager = this;
+    }
+
+    // Load rooms from storage into memory
+    loadFromStorage() {
+        const roomIds = this.storage.getAllRoomIds();
+        console.log('Loading rooms from storage:', roomIds);
+        
+        roomIds.forEach(roomId => {
+            const room = this.storage.loadRoom(roomId);
+            if (room && !room.isExpired()) {
+                this.rooms.set(roomId, room);
+                console.log('Loaded room:', roomId);
+            } else if (room && room.isExpired()) {
+                this.storage.deleteRoom(roomId);
+                console.log('Deleted expired room:', roomId);
+            }
+        });
+    }
+
+    // Sync rooms from storage (called by broadcast message)
+    syncFromStorage() {
+        this.loadFromStorage();
+        console.log('Synced rooms from storage');
     }
 
     createRoom(config, hostName) {
@@ -404,6 +501,9 @@ class GameManager {
         if (result.success) {
             this.rooms.set(room.id, room);
             this.playerRooms.set(result.playerId, room.id);
+            
+            // Save to storage
+            this.storage.saveRoom(room);
             
             return {
                 success: true,
@@ -418,9 +518,24 @@ class GameManager {
 
     joinRoom(roomCode, playerName) {
         console.log('GameManager.joinRoom called with:', roomCode);
+        
+        // First try to get from memory
+        let room = this.rooms.get(roomCode);
+        
+        // If not in memory, try to load from storage
+        if (!room) {
+            room = this.storage.loadRoom(roomCode);
+            if (room && !room.isExpired()) {
+                this.rooms.set(roomCode, room);
+                console.log('Loaded room from storage:', roomCode);
+            } else if (room && room.isExpired()) {
+                this.storage.deleteRoom(roomCode);
+                room = null;
+            }
+        }
+        
         console.log('Available rooms:', Array.from(this.rooms.keys()));
         
-        const room = this.rooms.get(roomCode);
         if (!room) {
             console.log('Room not found for code:', roomCode);
             return { success: false, message: 'Room not found' };
@@ -430,6 +545,9 @@ class GameManager {
         const result = room.addPlayer(playerName, false);
         if (result.success) {
             this.playerRooms.set(result.playerId, roomCode);
+            
+            // Save updated room to storage
+            this.storage.saveRoom(room);
         }
 
         return { ...result, room: room };
@@ -449,39 +567,51 @@ class GameManager {
         if (room.players.size === 0) {
             console.log('Deleting empty room:', roomId);
             this.rooms.delete(roomId);
+            this.storage.deleteRoom(roomId);
+        } else {
+            // Save updated room to storage
+            this.storage.saveRoom(room);
         }
 
         return true;
     }
 
     getRoom(roomId) {
-        return this.rooms.get(roomId);
+        let room = this.rooms.get(roomId);
+        
+        // If not in memory, try to load from storage
+        if (!room) {
+            room = this.storage.loadRoom(roomId);
+            if (room && !room.isExpired()) {
+                this.rooms.set(roomId, room);
+            } else if (room && room.isExpired()) {
+                this.storage.deleteRoom(roomId);
+                room = null;
+            }
+        }
+        
+        return room;
     }
 
-    getPlayerRoom(playerId) {
-        const roomId = this.playerRooms.get(playerId);
-        return roomId ? this.rooms.get(roomId) : null;
+    updateRoom(room) {
+        this.rooms.set(room.id, room);
+        this.storage.saveRoom(room);
+    }
+
+    // Get all active rooms
+    getAllRooms() {
+        return Array.from(this.rooms.values());
+    }
+
+    // Manual cleanup method
+    cleanupRooms() {
+        this.storage.cleanupExpiredRooms();
+        this.loadFromStorage();
     }
 }
 
-// Create global game manager
+// Initialize
 const gameManager = new GameManager();
-
-// Utility functions
-function formatTime(seconds) {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = Math.floor(seconds % 60);
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-}
-
-function formatPath(path) {
-    return path.join(' → ');
-}
-
-function getPlayerRank(score, leaderboard) {
-    const playerEntry = leaderboard.find(entry => entry.score === score);
-    return playerEntry ? playerEntry.rank : leaderboard.length + 1;
-}
 
 // Export for use in other files
 if (typeof module !== 'undefined' && module.exports) {
@@ -489,8 +619,11 @@ if (typeof module !== 'undefined' && module.exports) {
         GameRoom,
         GameManager,
         gameManager,
-        formatTime,
-        formatPath,
-        getPlayerRank
+        StorageManager
     };
+} else {
+    window.GameRoom = GameRoom;
+    window.GameManager = GameManager;
+    window.gameManager = gameManager;
+    window.StorageManager = StorageManager;
 }

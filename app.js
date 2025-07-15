@@ -9,6 +9,7 @@ class CricketConnectApp {
         this.gameTimer = null;
         this.currentPath = [];
         this.searchTimeout = null;
+        this.syncInterval = null;
         
         this.init();
     }
@@ -132,6 +133,13 @@ class CricketConnectApp {
         if (this.currentPlayerId) {
             gameManager.leaveRoom(this.currentPlayerId);
         }
+        
+        // Clear sync interval
+        if (this.syncInterval) {
+            clearInterval(this.syncInterval);
+            this.syncInterval = null;
+        }
+        
         this.currentRoom = null;
         this.currentPlayerId = null;
         this.currentPlayerName = null;
@@ -143,10 +151,22 @@ class CricketConnectApp {
     showLobby() {
         this.showScreen('gameLobby');
         this.updateLobbyDisplay();
+        
+        // Start syncing lobby every 2 seconds
+        this.syncInterval = setInterval(() => {
+            this.updateLobbyDisplay();
+        }, 2000);
     }
 
     updateLobbyDisplay() {
         if (!this.currentRoom) return;
+
+        // Refresh room data from storage
+        this.currentRoom = gameManager.getRoom(this.currentRoom.id);
+        if (!this.currentRoom) {
+            this.showMainMenu();
+            return;
+        }
 
         // Update room info
         document.getElementById('lobbyRoomName').textContent = `Room: ${this.currentRoom.name}`;
@@ -204,6 +224,8 @@ class CricketConnectApp {
 
         const result = this.currentRoom.startGame();
         if (result.success) {
+            // Update room in storage
+            gameManager.updateRoom(this.currentRoom);
             this.showGameScreen();
             this.startRound();
         } else {
@@ -680,6 +702,25 @@ function submitAnswer() {
 function nextRound() {
     app.nextRound();
 }
+
+// Debug functions for testing
+window.debugRooms = function() {
+    console.log('=== ROOM DEBUG INFO ===');
+    console.log('Available rooms:', Array.from(gameManager.rooms.keys()));
+    console.log('LocalStorage rooms:', gameManager.storage.getAllRoomIds());
+    console.log('Current room:', app.currentRoom ? app.currentRoom.id : 'none');
+    console.log('Current player:', app.currentPlayerId);
+    console.log('======================');
+};
+
+window.clearRooms = function() {
+    localStorage.removeItem('cricketConnect_rooms');
+    console.log('Cleared all rooms from localStorage');
+    gameManager.loadFromStorage();
+};
+
+// Initialize the app
+const app = new CricketConnectApp();
 
 function showFinalResults() {
     app.showFinalResults();
