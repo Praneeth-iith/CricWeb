@@ -152,7 +152,7 @@ Once deployed, access at:
 - **Final Domain**: `https://cricweb.com` (after domain setup)
 
 ### 📝 Credits
-**Created by Praneeth**
+**Cricket connect @2025**
 - Cricket Connect - The Ultimate Cricket Chain Game
 - Advanced graph algorithms implementation
 - Modern web game development

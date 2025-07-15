@@ -1,6 +1,6 @@
 # Cricket Connect - The Ultimate Cricket Chain Game
 
-**Created by Praneeth**
+**Cricket connect @2025**
 
 Cricket Connect is an innovative web-based multiplayer game that challenges players to connect cricket players through their teammates using their knowledge of cricket history. Test your cricket knowledge by finding the shortest path between any two players!
 

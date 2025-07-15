@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Cricket Connect Deployment Script
-# Created by Praneeth
+# Cricket connect @2025
 
 echo "🏏 Cricket Connect - Deployment Script"
 echo "========================================"
@@ -28,5 +28,5 @@ echo "   2. Go to Netlify Dashboard > Domain Management"
 echo "   3. Add custom domain: cricweb.com"
 echo "   4. Configure DNS settings as instructed"
 echo ""
-echo "🎮 Game created by Praneeth"
+echo "🎮 Cricket connect @2025"
 echo "🏏 Cricket Connect - The Ultimate Cricket Chain Game!"

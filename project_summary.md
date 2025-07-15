@@ -175,7 +175,7 @@ Frontend (HTML/CSS/JS) → Game Logic → Cricket Database → Graph Algorithm
 
 ## 🎪 Credit System
 
-The game prominently displays **"Created by Praneeth"** in multiple locations:
+The game prominently displays **"Cricket connect @2025"** in multiple locations:
 - Main game header
 - Demo page title
 - README documentation
