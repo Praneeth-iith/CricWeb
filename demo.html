@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cricket Connect - Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .demo-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .demo-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .demo-section h3 {
+            color: #333;
+            margin-top: 0;
+        }
+        .result {
+            background: #e8f5e8;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #28a745;
+        }
+        .controls {
+            margin: 20px 0;
+        }
+        .controls select, .controls input, .controls button {
+            margin: 5px;
+            padding: 8px;
+        }
+        .player-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background: #f9f9f9;
+        }
+        .path-visualization {
+            background: #f0f8ff;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 15px 0;
+            border-left: 4px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1>🏏 Cricket Connect - Demo</h1>
+        <p><strong>Created by Praneeth</strong></p>
+        
+        <div class="demo-section">
+            <h3>🎮 Test Graph Functionality</h3>
+            <div class="controls">
+                <label for="modeSelect">Game Mode:</label>
+                <select id="modeSelect">
+                    <option value="international">International Cricket</option>
+                    <option value="ipl">IPL</option>
+                </select>
+                <button onclick="switchMode()">Switch Mode</button>
+            </div>
+            <div id="modeInfo" class="result"></div>
+        </div>
+
+        <div class="demo-section">
+            <h3>🔍 Player Search</h3>
+            <div class="controls">
+                <input type="text" id="searchInput" placeholder="Search for a player..." onkeyup="searchPlayers()">
+            </div>
+            <div id="searchResults" class="player-list"></div>
+        </div>
+
+        <div class="demo-section">
+            <h3>🎯 Path Finding Demo</h3>
+            <div class="controls">
+                <input type="text" id="player1" placeholder="Player 1" list="playersList">
+                <input type="text" id="player2" placeholder="Player 2" list="playersList">
+                <button onclick="findPath()">Find Connection</button>
+                <button onclick="getRandomChallenge()">Random Challenge</button>
+            </div>
+            <datalist id="playersList"></datalist>
+            <div id="pathResult"></div>
+        </div>
+
+        <div class="demo-section">
+            <h3>📊 Statistics</h3>
+            <div id="stats"></div>
+        </div>
+
+        <div class="demo-section">
+            <h3>🌟 Sample Connections</h3>
+            <div id="sampleConnections"></div>
+            <button onclick="showSampleConnections()">Show Sample Connections</button>
+        </div>
+    </div>
+
+    <script src="cricketData.js"></script>
+    <script>
+        let currentMode = 'international';
+        let currentGraph = null;
+
+        // Initialize demo
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                switchMode();
+                updatePlayersList();
+                showStats();
+            }, 500);
+        });
+
+        function switchMode() {
+            currentMode = document.getElementById('modeSelect').value;
+            currentGraph = setGameMode(currentMode);
+            
+            const modeInfo = document.getElementById('modeInfo');
+            const playerCount = currentGraph.getAllPlayers().length;
+            const connections = calculateTotalConnections();
+            
+            modeInfo.innerHTML = `
+                <h4>Current Mode: ${currentMode === 'ipl' ? 'IPL' : 'International Cricket'}</h4>
+                <p><strong>Players:</strong> ${playerCount}</p>
+                <p><strong>Total Connections:</strong> ${connections}</p>
+                <p><strong>Average Connections per Player:</strong> ${(connections / playerCount).toFixed(2)}</p>
+            `;
+            
+            updatePlayersList();
+        }
+
+        function calculateTotalConnections() {
+            let totalConnections = 0;
+            const players = currentGraph.getAllPlayers();
+            players.forEach(player => {
+                totalConnections += currentGraph.getPlayerConnections(player).size;
+            });
+            return totalConnections / 2; // Each connection is counted twice
+        }
+
+        function searchPlayers() {
+            const query = document.getElementById('searchInput').value;
+            const results = document.getElementById('searchResults');
+            
+            if (query.length < 2) {
+                results.innerHTML = '<p>Type at least 2 characters to search...</p>';
+                return;
+            }
+            
+            const matches = currentGraph.searchPlayers(query);
+            
+            if (matches.length === 0) {
+                results.innerHTML = '<p>No players found.</p>';
+                return;
+            }
+            
+            results.innerHTML = '<h4>Search Results:</h4>' + 
+                matches.slice(0, 20).map(player => `<div>${player}</div>`).join('');
+        }
+
+        function updatePlayersList() {
+            const datalist = document.getElementById('playersList');
+            const players = currentGraph.getAllPlayers();
+            datalist.innerHTML = players.map(player => `<option value="${player}">`).join('');
+        }
+
+        function findPath() {
+            const player1 = document.getElementById('player1').value;
+            const player2 = document.getElementById('player2').value;
+            const resultDiv = document.getElementById('pathResult');
+            
+            if (!player1 || !player2) {
+                resultDiv.innerHTML = '<div class="result">Please enter both players.</div>';
+                return;
+            }
+            
+            if (!currentGraph.getAllPlayers().includes(player1)) {
+                resultDiv.innerHTML = '<div class="result">Player 1 not found in database.</div>';
+                return;
+            }
+            
+            if (!currentGraph.getAllPlayers().includes(player2)) {
+                resultDiv.innerHTML = '<div class="result">Player 2 not found in database.</div>';
+                return;
+            }
+            
+            const result = currentGraph.findShortestPath(player1, player2);
+            
+            if (!result) {
+                resultDiv.innerHTML = `
+                    <div class="result">
+                        <h4>❌ No Connection Found</h4>
+                        <p><strong>${player1}</strong> and <strong>${player2}</strong> are not connected in ${currentMode} cricket.</p>
+                        <p>This would be worth 5 points if you reported it as impossible!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const pathVisualization = result.path.map((player, index) => {
+                if (index === 0) return `<strong>${player}</strong>`;
+                if (index === result.path.length - 1) return `<strong>${player}</strong>`;
+                return player;
+            }).join(' → ');
+            
+            resultDiv.innerHTML = `
+                <div class="result">
+                    <h4>✅ Connection Found!</h4>
+                    <div class="path-visualization">
+                        ${pathVisualization}
+                    </div>
+                    <p><strong>Distance:</strong> ${result.distance} step${result.distance !== 1 ? 's' : ''}</p>
+                    <p><strong>Score:</strong> ${Math.max(1, 10 - result.distance)} points (if this was the optimal solution)</p>
+                </div>
+            `;
+        }
+
+        function getRandomChallenge() {
+            const pair = currentGraph.getRandomPlayerPair();
+            document.getElementById('player1').value = pair.player1;
+            document.getElementById('player2').value = pair.player2;
+            findPath();
+        }
+
+        function showStats() {
+            const statsDiv = document.getElementById('stats');
+            const players = currentGraph.getAllPlayers();
+            
+            // Calculate most connected players
+            const connectionCounts = players.map(player => ({
+                name: player,
+                connections: currentGraph.getPlayerConnections(player).size
+            })).sort((a, b) => b.connections - a.connections);
+            
+            const topPlayers = connectionCounts.slice(0, 10);
+            
+            statsDiv.innerHTML = `
+                <h4>Most Connected Players (${currentMode === 'ipl' ? 'IPL' : 'International'}):</h4>
+                ${topPlayers.map((player, index) => 
+                    `<div>${index + 1}. ${player.name} (${player.connections} connections)</div>`
+                ).join('')}
+            `;
+        }
+
+        function showSampleConnections() {
+            const sampleDiv = document.getElementById('sampleConnections');
+            const samples = [];
+            
+            // Generate 5 random samples
+            for (let i = 0; i < 5; i++) {
+                const pair = currentGraph.getRandomPlayerPair();
+                const result = currentGraph.findShortestPath(pair.player1, pair.player2);
+                
+                samples.push({
+                    player1: pair.player1,
+                    player2: pair.player2,
+                    result: result
+                });
+            }
+            
+            sampleDiv.innerHTML = `
+                <h4>Sample Connections in ${currentMode === 'ipl' ? 'IPL' : 'International'} Cricket:</h4>
+                ${samples.map(sample => {
+                    if (!sample.result) {
+                        return `
+                            <div class="result">
+                                <strong>${sample.player1}</strong> ↔ <strong>${sample.player2}</strong>
+                                <br>❌ No connection possible
+                            </div>
+                        `;
+                    }
+                    
+                    const pathDisplay = sample.result.path.join(' → ');
+                    return `
+                        <div class="result">
+                            <strong>${sample.player1}</strong> ↔ <strong>${sample.player2}</strong>
+                            <br>✅ ${pathDisplay}
+                            <br>Distance: ${sample.result.distance}, Score: ${Math.max(1, 10 - sample.result.distance)} points
+                        </div>
+                    `;
+                }).join('')}
+            `;
+        }
+    </script>
+</body>
+</html>
