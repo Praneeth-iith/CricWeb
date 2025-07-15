@@ -719,9 +719,6 @@ window.clearRooms = function() {
     gameManager.loadFromStorage();
 };
 
-// Initialize the app
-const app = new CricketConnectApp();
-
 function showFinalResults() {
     app.showFinalResults();
 }
