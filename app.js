@@ -391,9 +391,9 @@ class CricketConnectApp {
         feedback.innerHTML = `
             <div class="feedback-content">
                 <h3>${result.correct ? '✓ Correct!' : '✗ Incorrect'}</h3>
-                <p>Points: ${result.points}</p>
                 <p>Time: ${result.timeTaken.toFixed(1)}s</p>
-                ${result.penalty ? `<p>Penalty: ${result.penalty}</p>` : ''}
+                <p>Penalty: ${result.penalty} min</p>
+                ${result.correct ? '<p style="color: green;">+1 Problem Solved</p>' : '<p style="color: red;">Wrong Answer</p>'}
             </div>
         `;
         
@@ -484,6 +484,14 @@ class CricketConnectApp {
                 <span>${gameSummary.totalPlayers}</span>
             </div>
             <div class="summary-item">
+                <span>Total Correct:</span>
+                <span>${gameSummary.totalCorrect}</span>
+            </div>
+            <div class="summary-item">
+                <span>Total Wrong:</span>
+                <span>${gameSummary.totalWrong}</span>
+            </div>
+            <div class="summary-item">
                 <span>Average Time:</span>
                 <span>${gameSummary.averageTime.toFixed(1)}s</span>
             </div>
@@ -509,7 +517,8 @@ class CricketConnectApp {
                     <span class="name">${entry.name}</span>
                 </div>
                 <div class="score-info">
-                    <span class="score">${entry.score} pts</span>
+                    <span class="score">${entry.correctAnswers} solved</span>
+                    <span class="penalty">${entry.totalPenalty} min</span>
                     <span class="time">${formatTime(entry.totalTime)}</span>
                 </div>
             `;
@@ -522,7 +531,7 @@ class CricketConnectApp {
     updatePlayerScore() {
         const player = this.currentRoom.players.get(this.currentPlayerId);
         if (player) {
-            document.getElementById('currentScore').textContent = player.score;
+            document.getElementById('currentScore').textContent = `${player.correctAnswers} solved`;
         }
     }
 
@@ -535,7 +544,7 @@ class CricketConnectApp {
             item.className = 'player-online-item';
             item.innerHTML = `
                 <span>${player.name}</span>
-                <span>${player.score} pts</span>
+                <span>${player.correctAnswers} solved</span>
             `;
             container.appendChild(item);
         }
@@ -570,10 +579,11 @@ class CricketConnectApp {
                     ${Object.entries(round.submissions).map(([playerId, submission]) => {
                         const player = this.currentRoom.players.get(playerId);
                         const playerName = player ? player.name : 'Unknown';
+                        const status = submission.result.correct ? '✓' : '✗';
                         return `
                             <div class="submission-item">
                                 <span>${playerName}:</span>
-                                <span>${submission.result.points} pts (${submission.timeTaken.toFixed(1)}s)</span>
+                                <span>${status} ${submission.result.penalty} min (${submission.timeTaken.toFixed(1)}s)</span>
                             </div>
                         `;
                     }).join('')}

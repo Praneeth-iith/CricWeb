@@ -9,12 +9,12 @@ Cricket Connect is an innovative web-based multiplayer game that challenges play
 ### Game Concept
 Connect two cricket players through intermediate players who have played with both. For example, to connect **Virat Kohli** and **Shubman Gill** in IPL mode, you might use: `Virat Kohli → Yash Dayal → Shubman Gill` (because Yash Dayal played with both Virat and Gill in IPL).
 
-### Scoring System
-- **Base Points**: 10 points for correct answers
-- **Penalty System**: Your penalty = Your path distance - Shortest possible distance
-- **Time Bonus**: Faster submissions may receive bonuses
-- **Wrong Answer Penalty**: Customizable penalty for incorrect answers
-- **Impossible Connections**: 5 points for correctly identifying impossible connections
+### Scoring System (Codeforces-Style)
+- **Primary Ranking**: Number of correct answers (descending)
+- **Secondary Ranking**: Total penalty time (ascending)
+- **Correct Answer Penalty**: Time taken (in minutes, rounded up)
+- **Wrong Answer Penalty**: Configurable penalty minutes added to total
+- **Impossible Connections**: Count as correct answers if properly identified
 
 ## 🚀 Getting Started
 
@@ -58,25 +58,28 @@ Configure your game:
 - **Delete Rounds**: Remove rounds and recalculate scores
 - **Room Settings**: Manage game parameters
 
-## 🏆 Scoring Details
+## 🏆 Scoring Details (Codeforces-Style)
 
-### Points Calculation
+### Ranking System
 ```
-Base Points = 10
-Penalty = Your Path Length - Shortest Path Length
-Final Score = Base Points - Penalty
+Primary Sort: Number of Correct Answers (Descending)
+Secondary Sort: Total Penalty Time (Ascending)
 ```
+
+### Penalty Calculation
+- **Correct Answer**: Time taken (in minutes, rounded up)
+- **Wrong Answer**: Configurable penalty minutes (default: 2 minutes)
+- **Total Penalty**: Sum of all individual penalties
 
 ### Example Scoring
-- **Shortest Path**: 2 steps (distance = 1)
-- **Your Path**: 4 steps (distance = 3)
-- **Penalty**: 3 - 1 = 2
-- **Final Score**: 10 - 2 = 8 points
+- **Player A**: 3 correct (penalties: 2, 1, 3 min) = 3 solved, 6 min penalty
+- **Player B**: 2 correct (penalties: 1, 2 min) = 2 solved, 3 min penalty
+- **Ranking**: Player A ranks higher (more problems solved)
 
 ### Special Cases
-- **Impossible Connection**: 5 points if correctly identified
-- **Wrong Answer**: -2 points (or custom penalty)
-- **Time Bonus**: Faster correct answers may receive bonuses
+- **Impossible Connection**: Counts as correct if properly identified
+- **Wrong Answer**: Adds penalty minutes to total
+- **Multiple Submissions**: Only last submission counts
 
 ## 🎪 Game Rules
 
@@ -92,8 +95,8 @@ Final Score = Base Points - Penalty
 - **Time Tracking**: Response time is recorded for tiebreakers
 
 ### Leaderboard Rules
-- **Primary Sort**: Total points (descending)
-- **Tiebreaker**: Total response time (ascending)
+- **Primary Sort**: Number of correct answers (descending)
+- **Secondary Sort**: Total penalty time (ascending)
 - **Live Updates**: Real-time leaderboard during game
 
 ## 🔧 Technical Features
@@ -184,15 +187,17 @@ Final Score = Base Points - Penalty
 2. `MS Dhoni → Faf du Plessis → Virat Kohli` (Via CSK-RCB connection)
 3. `MS Dhoni → Ravindra Jadeja → Virat Kohli` (Via national team)
 
-**Optimal**: Direct connection (1 step) = 10 points
-**Alternative**: 2-step path = 9 points (10 - 1 penalty)
+**Scoring**: 
+- **Correct Answer in 45 seconds**: +1 solved, +1 minute penalty
+- **Wrong Answer**: +0 solved, +2 minutes penalty (default)
+- **Impossible (correct)**: +1 solved, +1 minute penalty
 
 ## 🏅 Achievement System
 
 ### Scoring Milestones
 - **Perfect Round**: All answers correct with minimum penalty
 - **Speed Demon**: Fastest average response time
-- **Cricket Genius**: Highest overall score
+- **Cricket Genius**: Most problems solved
 - **Impossible Expert**: Most impossible connections identified
 
 ### Statistics Tracking

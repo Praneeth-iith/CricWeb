@@ -42,8 +42,10 @@ class GameRoom {
             id: playerId,
             name: playerName,
             isHost: isHost,
-            score: 0,
-            roundScores: [],
+            correctAnswers: 0,
+            totalPenalty: 0,
+            roundData: [],
+            wrongSubmissions: 0,
             joinedAt: Date.now()
         };
 
@@ -151,15 +153,15 @@ class GameRoom {
                 return {
                     type: 'impossible',
                     correct: true,
-                    points: 5,
-                    timeTaken: timeTaken
+                    timeTaken: timeTaken,
+                    penalty: Math.ceil(timeTaken / 60) // Convert to minutes, round up
                 };
             } else {
                 return {
                     type: 'impossible',
                     correct: false,
-                    points: -this.wrongAnswerPenalty,
-                    timeTaken: timeTaken
+                    timeTaken: timeTaken,
+                    penalty: this.wrongAnswerPenalty * 60 // Convert to seconds for penalty
                 };
             }
         } else if (answer.type === 'path') {
@@ -170,9 +172,9 @@ class GameRoom {
                 return {
                     type: 'path',
                     correct: false,
-                    points: -this.wrongAnswerPenalty,
                     timeTaken: timeTaken,
-                    path: path
+                    path: path,
+                    penalty: this.wrongAnswerPenalty * 60
                 };
             }
 
@@ -181,9 +183,9 @@ class GameRoom {
                 return {
                     type: 'path',
                     correct: false,
-                    points: -this.wrongAnswerPenalty,
                     timeTaken: timeTaken,
-                    path: path
+                    path: path,
+                    penalty: this.wrongAnswerPenalty * 60
                 };
             }
 
@@ -193,33 +195,28 @@ class GameRoom {
                 return {
                     type: 'path',
                     correct: false,
-                    points: -this.wrongAnswerPenalty,
                     timeTaken: timeTaken,
-                    path: path
+                    path: path,
+                    penalty: this.wrongAnswerPenalty * 60
                 };
             }
 
-            // Calculate score based on path length vs shortest path
-            const shortestPath = this.currentChallenge.shortestPath;
-            const penalty = path.length - 1 - (shortestPath ? shortestPath.distance : 0);
-            const basePoints = Math.max(1, 10 - penalty);
-            
+            // Valid path - calculate time penalty in minutes
             return {
                 type: 'path',
                 correct: true,
-                points: basePoints,
-                penalty: penalty,
                 timeTaken: timeTaken,
                 path: path,
-                pathLength: path.length - 1
+                pathLength: path.length - 1,
+                penalty: Math.ceil(timeTaken / 60) // Convert to minutes, round up
             };
         }
 
         return {
             type: 'invalid',
             correct: false,
-            points: -this.wrongAnswerPenalty,
-            timeTaken: timeTaken
+            timeTaken: timeTaken,
+            penalty: this.wrongAnswerPenalty * 60
         };
     }
 
@@ -251,11 +248,23 @@ class GameRoom {
         for (const [playerId, submission] of this.playerSubmissions) {
             const player = this.players.get(playerId);
             if (player) {
-                player.score += submission.result.points;
-                player.roundScores.push({
+                // Update based on Codeforces-style scoring
+                if (submission.result.correct) {
+                    player.correctAnswers += 1;
+                } else {
+                    player.wrongSubmissions += 1;
+                }
+                
+                // Add penalty (time for correct, penalty time for wrong)
+                player.totalPenalty += submission.result.penalty;
+                
+                // Store round data
+                player.roundData.push({
                     round: this.currentRound,
-                    points: submission.result.points,
-                    timeTaken: submission.timeTaken
+                    correct: submission.result.correct,
+                    penalty: submission.result.penalty,
+                    timeTaken: submission.timeTaken,
+                    type: submission.result.type
                 });
             }
         }
@@ -278,21 +287,23 @@ class GameRoom {
         const playerArray = Array.from(this.players.values());
         return playerArray
             .sort((a, b) => {
-                // Sort by score (descending), then by total time (ascending)
-                if (a.score !== b.score) {
-                    return b.score - a.score;
+                // Codeforces-style ranking: 
+                // 1. Number of correct answers (descending)
+                // 2. Total penalty (ascending)
+                if (a.correctAnswers !== b.correctAnswers) {
+                    return b.correctAnswers - a.correctAnswers;
                 }
                 
-                const aTotalTime = a.roundScores.reduce((sum, round) => sum + round.timeTaken, 0);
-                const bTotalTime = b.roundScores.reduce((sum, round) => sum + round.timeTaken, 0);
-                return aTotalTime - bTotalTime;
+                return a.totalPenalty - b.totalPenalty;
             })
             .map((player, index) => ({
                 rank: index + 1,
                 playerId: player.id,
                 name: player.name,
-                score: player.score,
-                totalTime: player.roundScores.reduce((sum, round) => sum + round.timeTaken, 0)
+                correctAnswers: player.correctAnswers,
+                totalPenalty: player.totalPenalty,
+                wrongSubmissions: player.wrongSubmissions,
+                totalTime: player.roundData.reduce((sum, round) => sum + round.timeTaken, 0)
             }));
     }
 
@@ -318,8 +329,10 @@ class GameRoom {
     recalculateAllScores() {
         // Reset all player scores
         for (const player of this.players.values()) {
-            player.score = 0;
-            player.roundScores = [];
+            player.correctAnswers = 0;
+            player.totalPenalty = 0;
+            player.wrongSubmissions = 0;
+            player.roundData = [];
         }
 
         // Recalculate from round history
@@ -330,11 +343,23 @@ class GameRoom {
             for (const [playerId, submission] of Object.entries(round.submissions)) {
                 const player = this.players.get(playerId);
                 if (player) {
-                    player.score += submission.result.points;
-                    player.roundScores.push({
+                    // Update based on Codeforces-style scoring
+                    if (submission.result.correct) {
+                        player.correctAnswers += 1;
+                    } else {
+                        player.wrongSubmissions += 1;
+                    }
+                    
+                    // Add penalty
+                    player.totalPenalty += submission.result.penalty;
+                    
+                    // Store round data
+                    player.roundData.push({
                         round: i + 1,
-                        points: submission.result.points,
-                        timeTaken: submission.timeTaken
+                        correct: submission.result.correct,
+                        penalty: submission.result.penalty,
+                        timeTaken: submission.timeTaken,
+                        type: submission.result.type
                     });
                 }
             }
@@ -349,11 +374,16 @@ class GameRoom {
             return sum + avgRoundTime;
         }, 0) / totalRounds;
 
+        const totalCorrect = Array.from(this.players.values()).reduce((sum, player) => sum + player.correctAnswers, 0);
+        const totalWrong = Array.from(this.players.values()).reduce((sum, player) => sum + player.wrongSubmissions, 0);
+
         return {
             totalRounds: totalRounds,
             averageTime: averageTime,
             mode: this.mode,
             totalPlayers: this.players.size,
+            totalCorrect: totalCorrect,
+            totalWrong: totalWrong,
             gameTime: Date.now() - this.roundHistory[0]?.challenge?.round || 0
         };
     }

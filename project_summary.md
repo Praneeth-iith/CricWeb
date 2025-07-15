@@ -48,9 +48,9 @@ Cricket Connect is a comprehensive web-based multiplayer cricket knowledge game 
 - **Player Management**: Add/remove players, assign host privileges
 
 ### 6. **Scoring System**
-- **Dynamic Scoring**: Points based on path efficiency
-- **Penalty System**: Distance penalty for suboptimal solutions
-- **Bonus Points**: Rewards for identifying impossible connections
+- **Codeforces-Style Ranking**: Problems solved first, then penalty time
+- **Penalty System**: Time penalties for correct answers, fixed penalties for wrong answers
+- **Correct Answer Tracking**: Count of problems solved per player
 - **Leaderboards**: Round-by-round and final rankings
 
 ## 🔧 Technical Implementation
@@ -119,7 +119,7 @@ Frontend (HTML/CSS/JS) → Game Logic → Cricket Database → Graph Algorithm
 ✅ **Multiplayer Support** (2-10 players)
 ✅ **Custom Room Settings** (rounds, time, penalties)
 ✅ **Graph Algorithm** (Dijkstra's shortest path)
-✅ **Real-time Scoring** (penalty-based system)
+✅ **Real-time Scoring** (Codeforces-style ranking system)
 ✅ **Player Search** (autocomplete with fuzzy matching)
 ✅ **Visual Path Building** (interactive UI)
 ✅ **Round History** (view all previous rounds)
@@ -206,9 +206,9 @@ The game prominently displays **"Created by Praneeth"** in multiple locations:
 
 The Cricket Connect game successfully delivers:
 - **Educational Value**: Learn cricket history through gameplay
-- **Competitive Fun**: Multiplayer competition with scoring
+- **Competitive Fun**: Multiplayer competition with Codeforces-style ranking
 - **Technical Excellence**: Advanced algorithms and smooth UX
-- **Comprehensive Features**: All requested functionality implemented
+- **Comprehensive Features**: All requested functionality implemented with penalty-based scoring
 - **Professional Quality**: Production-ready web application
 
 ## 🌟 Future Enhancements

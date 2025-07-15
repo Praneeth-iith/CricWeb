@@ -160,7 +160,7 @@
                         <span id="timeRemaining">60</span>s
                     </div>
                     <div class="score">
-                        Score: <span id="currentScore">0</span>
+                        Solved: <span id="currentScore">0</span>
                     </div>
                 </div>
                 
@@ -265,17 +265,18 @@
                     <ol>
                         <li><strong>Objective:</strong> Connect two cricket players through their teammates who played with both.</li>
                         <li><strong>Connection Rule:</strong> Player C can connect A and B only if C played with both A and B in at least one match in the selected domain (International/IPL).</li>
-                        <li><strong>Scoring:</strong> Your penalty = Your path distance - Shortest possible distance</li>
+                        <li><strong>Scoring:</strong> Codeforces-style ranking by problems solved, then by penalty time</li>
                         <li><strong>Time Limit:</strong> Each round has a time limit set by the host (20s - 2min)</li>
                         <li><strong>Submissions:</strong> You can upgrade your answer multiple times; only the last submission counts</li>
-                        <li><strong>Impossible Connections:</strong> If you believe connection is impossible, report it to earn 5 points</li>
-                        <li><strong>Penalties:</strong> Wrong answers incur penalties set by the host</li>
+                        <li><strong>Impossible Connections:</strong> If you believe connection is impossible, report it to earn +1 solved</li>
+                        <li><strong>Penalties:</strong> Correct answers add time penalty, wrong answers add penalty minutes</li>
                     </ol>
                     
                     <h3>Example</h3>
                     <p>Connect: <strong>Virat Kohli</strong> ↔ <strong>Shubman Gill</strong> (IPL)</p>
                     <p>Solution: Virat Kohli → Yash Dayal → Shubman Gill</p>
                     <p>(Yash Dayal played with both Virat and Gill in IPL)</p>
+                    <p><strong>Scoring:</strong> Correct in 45s = +1 solved, +1 min penalty</p>
                 </div>
             </div>
         </div>
