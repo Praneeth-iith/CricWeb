@@ -29,6 +29,7 @@ class GameRoom {
         for (let i = 0; i < 6; i++) {
             code += chars.charAt(Math.floor(Math.random() * chars.length));
         }
+        console.log('Generated room code:', code);
         return code;
     }
 
@@ -416,11 +417,16 @@ class GameManager {
     }
 
     joinRoom(roomCode, playerName) {
+        console.log('GameManager.joinRoom called with:', roomCode);
+        console.log('Available rooms:', Array.from(this.rooms.keys()));
+        
         const room = this.rooms.get(roomCode);
         if (!room) {
+            console.log('Room not found for code:', roomCode);
             return { success: false, message: 'Room not found' };
         }
 
+        console.log('Room found:', room.id);
         const result = room.addPlayer(playerName, false);
         if (result.success) {
             this.playerRooms.set(result.playerId, roomCode);
@@ -441,6 +447,7 @@ class GameManager {
 
         // Delete room if empty
         if (room.players.size === 0) {
+            console.log('Deleting empty room:', roomId);
             this.rooms.delete(roomId);
         }
 

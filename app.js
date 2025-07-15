@@ -80,7 +80,7 @@ class CricketConnectApp {
     // Room Management
     createRoom() {
         const config = {
-            roomName: document.getElementById('roomName').value,
+            roomName: document.getElementById('roomName').value.trim(),
             gameMode: document.getElementById('gameMode').value,
             maxPlayers: parseInt(document.getElementById('maxPlayers').value),
             rounds: parseInt(document.getElementById('rounds').value),
@@ -89,14 +89,15 @@ class CricketConnectApp {
         };
 
         const hostName = prompt('Enter your name:');
-        if (!hostName) return;
+        if (!hostName || !hostName.trim()) return;
 
-        const result = gameManager.createRoom(config, hostName);
+        const result = gameManager.createRoom(config, hostName.trim());
         if (result.success) {
             this.currentRoom = result.room;
             this.currentPlayerId = result.playerId;
-            this.currentPlayerName = hostName;
+            this.currentPlayerName = hostName.trim();
             this.isHost = true;
+            console.log('Room created successfully with code:', result.room.id);
             this.showLobby();
         } else {
             alert('Failed to create room: ' + result.message);
@@ -104,14 +105,17 @@ class CricketConnectApp {
     }
 
     joinRoom() {
-        const roomCode = document.getElementById('roomCode').value.toUpperCase();
-        const playerName = document.getElementById('playerName').value;
+        const roomCode = document.getElementById('roomCode').value.trim().toUpperCase();
+        const playerName = document.getElementById('playerName').value.trim();
 
         if (!roomCode || !playerName) {
             alert('Please enter both room code and your name');
             return;
         }
 
+        console.log('Trying to join room with code:', roomCode);
+        console.log('Available rooms:', Array.from(gameManager.rooms.keys()));
+        
         const result = gameManager.joinRoom(roomCode, playerName);
         if (result.success) {
             this.currentRoom = result.room;
@@ -146,7 +150,23 @@ class CricketConnectApp {
 
         // Update room info
         document.getElementById('lobbyRoomName').textContent = `Room: ${this.currentRoom.name}`;
-        document.getElementById('displayRoomCode').textContent = this.currentRoom.id;
+        const roomCodeElement = document.getElementById('displayRoomCode');
+        roomCodeElement.textContent = this.currentRoom.id;
+        
+        // Add click to copy functionality
+        roomCodeElement.style.cursor = 'pointer';
+        roomCodeElement.title = 'Click to copy room code';
+        roomCodeElement.onclick = () => {
+            navigator.clipboard.writeText(this.currentRoom.id).then(() => {
+                const originalText = roomCodeElement.textContent;
+                roomCodeElement.textContent = 'Copied!';
+                setTimeout(() => {
+                    roomCodeElement.textContent = originalText;
+                }, 1000);
+            }).catch(err => {
+                console.log('Could not copy text: ', err);
+            });
+        };
 
         // Update settings
         document.getElementById('settingMode').textContent = 

@@ -258,6 +258,16 @@ body {
     padding: 5px 15px;
     border-radius: 20px;
     font-family: 'Courier New', monospace;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    user-select: all;
+    border: 2px solid #667eea;
+}
+
+.code:hover {
+    background: #5a6fd8;
+    transform: scale(1.05);
+    border-color: #5a6fd8;
 }
 
 .lobby-content {
