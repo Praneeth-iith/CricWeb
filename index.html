@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cricket Connect - The Ultimate Cricket Chain Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTIwIDNMMzUgMTBWMzBMMjAgMzdMNSAzMFYxMEwyMCAzWiIgZmlsbD0iIzFEOUJGMCIgc3Ryb2tlPSIjMTQ3M0E2IiBzdHJva2Utd2lkdGg9IjIiLz4KPHN2ZyB4PSIxMiIgeT0iMTIiIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAybDMuMDkgNi4yNkwyMiA5bC0zLjA5IDYuMjZMMTIgMTRsLTMuMDktNi4yNkwyIDlsNi45MS00Ljc0TDEyIDJ6Ii8+Cjwvc3ZnPgo8L3N2Zz4K" alt="Cricket Connect">
+                <h1>Cricket Connect</h1>
+            </div>
+            <div class="subtitle">Connect the Cricket Universe</div>
+        </header>
+
+        <!-- Main Menu -->
+        <div id="mainMenu" class="screen active">
+            <div class="menu-container">
+                <h2>Welcome to Cricket Connect!</h2>
+                <p class="description">Challenge your cricket knowledge by connecting players through their teammates!</p>
+                
+                <div class="menu-options">
+                    <button class="btn btn-primary" onclick="showCreateRoom()">Create Room</button>
+                    <button class="btn btn-secondary" onclick="showJoinRoom()">Join Room</button>
+                    <button class="btn btn-outline" onclick="showRules()">Rules</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Room Screen -->
+        <div id="createRoom" class="screen">
+            <div class="form-container">
+                <h2>Create Game Room</h2>
+                <form id="roomForm">
+                    <div class="form-group">
+                        <label for="roomName">Room Name</label>
+                        <input type="text" id="roomName" required placeholder="Enter room name">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="gameMode">Game Mode</label>
+                        <select id="gameMode" required>
+                            <option value="">Select Mode</option>
+                            <option value="international">International Cricket</option>
+                            <option value="ipl">IPL (Indian Premier League)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="maxPlayers">Maximum Players</label>
+                        <input type="number" id="maxPlayers" min="2" max="10" value="4" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="rounds">Number of Rounds</label>
+                        <input type="number" id="rounds" min="1" max="20" value="5" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="timePerRound">Time per Round (seconds)</label>
+                        <input type="number" id="timePerRound" min="20" max="120" value="60" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="wrongAnswerPenalty">Wrong Answer Penalty</label>
+                        <input type="number" id="wrongAnswerPenalty" min="0" max="10" value="2" required>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="showMainMenu()">Back</button>
+                        <button type="submit" class="btn btn-primary">Create Room</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Join Room Screen -->
+        <div id="joinRoom" class="screen">
+            <div class="form-container">
+                <h2>Join Game Room</h2>
+                <form id="joinForm">
+                    <div class="form-group">
+                        <label for="playerName">Your Name</label>
+                        <input type="text" id="playerName" required placeholder="Enter your name">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="roomCode">Room Code</label>
+                        <input type="text" id="roomCode" required placeholder="Enter room code">
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="showMainMenu()">Back</button>
+                        <button type="submit" class="btn btn-primary">Join Room</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Game Lobby -->
+        <div id="gameLobby" class="screen">
+            <div class="lobby-container">
+                <div class="lobby-header">
+                    <h2 id="lobbyRoomName">Room: </h2>
+                    <div class="room-code">
+                        <span>Room Code: </span>
+                        <span id="displayRoomCode" class="code"></span>
+                    </div>
+                </div>
+                
+                <div class="lobby-content">
+                    <div class="players-section">
+                        <h3>Players</h3>
+                        <div id="playersList" class="players-list"></div>
+                    </div>
+                    
+                    <div class="game-settings">
+                        <h3>Game Settings</h3>
+                        <div class="settings-grid">
+                            <div class="setting-item">
+                                <span>Mode:</span>
+                                <span id="settingMode"></span>
+                            </div>
+                            <div class="setting-item">
+                                <span>Rounds:</span>
+                                <span id="settingRounds"></span>
+                            </div>
+                            <div class="setting-item">
+                                <span>Time per Round:</span>
+                                <span id="settingTime"></span>
+                            </div>
+                            <div class="setting-item">
+                                <span>Wrong Answer Penalty:</span>
+                                <span id="settingPenalty"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="lobby-actions">
+                    <button class="btn btn-secondary" onclick="leaveRoom()">Leave Room</button>
+                    <button id="startGameBtn" class="btn btn-primary" onclick="startGame()" style="display: none;">Start Game</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="gameScreen" class="screen">
+            <div class="game-container">
+                <div class="game-header">
+                    <div class="round-info">
+                        <span>Round <span id="currentRound">1</span> of <span id="totalRounds">5</span></span>
+                    </div>
+                    <div class="timer">
+                        <span id="timeRemaining">60</span>s
+                    </div>
+                    <div class="score">
+                        Score: <span id="currentScore">0</span>
+                    </div>
+                </div>
+                
+                <div class="challenge-section">
+                    <h3>Connect the Players</h3>
+                    <div class="players-to-connect">
+                        <span id="playerA" class="player-name"></span>
+                        <span class="connector">←→</span>
+                        <span id="playerB" class="player-name"></span>
+                    </div>
+                    
+                    <div class="connection-builder">
+                        <div class="connection-path" id="connectionPath">
+                            <div class="path-node start" id="startNode"></div>
+                            <div class="path-middle" id="pathMiddle"></div>
+                            <div class="path-node end" id="endNode"></div>
+                        </div>
+                        
+                        <div class="player-search">
+                            <input type="text" id="playerSearch" placeholder="Search and add intermediate players...">
+                            <div id="searchResults" class="search-results"></div>
+                        </div>
+                        
+                        <div class="current-path" id="currentPath"></div>
+                    </div>
+                    
+                    <div class="game-actions">
+                        <button class="btn btn-secondary" onclick="clearPath()">Clear Path</button>
+                        <button class="btn btn-danger" onclick="reportImpossible()">Report Impossible</button>
+                        <button class="btn btn-primary" onclick="submitAnswer()">Submit Answer</button>
+                    </div>
+                </div>
+                
+                <div class="game-sidebar">
+                    <div class="players-online">
+                        <h4>Players</h4>
+                        <div id="gamePlayersList"></div>
+                    </div>
+                    
+                    <div class="round-history">
+                        <button class="btn btn-outline" onclick="showRoundHistory()">Round History</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Round Results -->
+        <div id="roundResults" class="screen">
+            <div class="results-container">
+                <h2>Round <span id="resultRound">1</span> Results</h2>
+                
+                <div class="correct-answer">
+                    <h3>Shortest Path Solution</h3>
+                    <div id="shortestPath" class="path-display"></div>
+                    <p>Distance: <span id="shortestDistance">0</span></p>
+                </div>
+                
+                <div class="leaderboard">
+                    <h3>Round Leaderboard</h3>
+                    <div id="roundLeaderboard" class="leaderboard-list"></div>
+                </div>
+                
+                <div class="results-actions">
+                    <button class="btn btn-secondary" onclick="showRoundHistory()">View History</button>
+                    <button id="nextRoundBtn" class="btn btn-primary" onclick="nextRound()">Next Round</button>
+                    <button id="finalResultsBtn" class="btn btn-success" onclick="showFinalResults()" style="display: none;">Final Results</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Final Results -->
+        <div id="finalResults" class="screen">
+            <div class="results-container">
+                <h2>🏆 Final Results</h2>
+                
+                <div class="final-leaderboard">
+                    <h3>Final Leaderboard</h3>
+                    <div id="finalLeaderboard" class="leaderboard-list"></div>
+                </div>
+                
+                <div class="game-summary">
+                    <h3>Game Summary</h3>
+                    <div id="gameSummary" class="summary-stats"></div>
+                </div>
+                
+                <div class="final-actions">
+                    <button class="btn btn-secondary" onclick="showRoundHistory()">View All Rounds</button>
+                    <button class="btn btn-primary" onclick="showMainMenu()">New Game</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rules Modal -->
+        <div id="rulesModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Game Rules</h2>
+                    <span class="close" onclick="closeModal('rulesModal')">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <h3>How to Play Cricket Connect</h3>
+                    <ol>
+                        <li><strong>Objective:</strong> Connect two cricket players through their teammates who played with both.</li>
+                        <li><strong>Connection Rule:</strong> Player C can connect A and B only if C played with both A and B in at least one match in the selected domain (International/IPL).</li>
+                        <li><strong>Scoring:</strong> Your penalty = Your path distance - Shortest possible distance</li>
+                        <li><strong>Time Limit:</strong> Each round has a time limit set by the host (20s - 2min)</li>
+                        <li><strong>Submissions:</strong> You can upgrade your answer multiple times; only the last submission counts</li>
+                        <li><strong>Impossible Connections:</strong> If you believe connection is impossible, report it to earn 5 points</li>
+                        <li><strong>Penalties:</strong> Wrong answers incur penalties set by the host</li>
+                    </ol>
+                    
+                    <h3>Example</h3>
+                    <p>Connect: <strong>Virat Kohli</strong> ↔ <strong>Shubman Gill</strong> (IPL)</p>
+                    <p>Solution: Virat Kohli → Yash Dayal → Shubman Gill</p>
+                    <p>(Yash Dayal played with both Virat and Gill in IPL)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Round History Modal -->
+        <div id="historyModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Round History</h2>
+                    <span class="close" onclick="closeModal('historyModal')">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div id="historyContent"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Created by <strong>Praneeth</strong> | Cricket Connect © 2024</p>
+        </footer>
+    </div>
+
+    <script src="cricketData.js"></script>
+    <script src="gameLogic.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
